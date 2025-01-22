@@ -7,53 +7,53 @@ import textwrap
 import threading
 
 
-def execute(cmd):
-    """Execute a command on the local system and return its output."""
-    cmd = cmd.strip()
-    if not cmd:
+def execute(cmd): #execute fonksiyonu baglantidan sonra gonderilen komutlari hedefte calistiriyor ve hedeften istemciye gonderiliyor
+    """Execute a command on the local system and return its output.""" #cmd argumani burada komutlari alir
+    cmd = cmd.strip() #komutta gereksiz karakterleri kaldirir bosluk gibi
+    if not cmd: #eger hic bir komut verilmezse hic bir komut gitmez
         return
-    output = subprocess.check_output(shlex.split(cmd), stderr=subprocess.STDOUT)
-    return output.decode()
+    output = subprocess.check_output(shlex.split(cmd), stderr=subprocess.STDOUT) #komutu calistir
+    return output.decode() #komut ciktisini alir
 
 
-class NetCat:
-    def __init__(self, args, buffer=None):
+class NetCat: #socket baglantisi kurmak icin sinif olusturuyor yani tum baglanti bu sinif uzerinden olacak
+    def __init__(self, args, buffer=None): #args parametresini sinifin tum fonksiyonlarinda kullanilabilir yapiyoruz, bufferde ayni sekilde, None vermemizin sebebi eger buffer girilmezse hata vermesin diye
         self.args = args
         self.buffer = buffer
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #socket sunucusunu baslatiyoruz, initde vermemizin sebebi hem diger fonksiyonlarda socket metodlarina rahat ulasmak icin hemde sinifi calistirdigimizda socket sunucusunun baslatilmasi icin
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #socket baglantinin devamli olmasi icin bir ayar
 
-    def run(self):
-        if self.args.listen:
-            self.listen()
+    def run(self): #bu fonksiyon hedef ve istemciyi belirliyor. Yani
+        if self.args.listen: #kod calistirildiginda l parametresinin verilip verilmedigini yokluyoruz
+            self.listen() #eger l parametresi verilmisse listen fonksiyonunu cagiriyoruz
         else:
-            self.send()
+            self.send() #eger l parametresi verilmemisse sunucuya baslatan degilde baglanan oluyoruz send fonksiyonunu cagirarak
 
-    def send(self):
+    def send(self): #listener yapan hedefe baglanmak icin bu fonksiyonu olusturuyoruz
         """Connect to a target and send/receive data interactively."""
-        self.socket.connect((self.args.target, self.args.port))
-        if self.buffer:
+        self.socket.connect((self.args.target, self.args.port)) #initde baslatdigimiz socket sunucusunun connect metodunu kullanip, arguman olarak port ve hedef ipsi veriliyor
+        if self.buffer: #eger komut verilmisse socket'in send fonksiyonu ile komutu gonderiyoruz burada buffer gonderliecek komutu temsil ediyor
             self.socket.send(self.buffer)
 
-        try:
-            while True:
-                recv_len = 1
-                response = ''
-                while recv_len:
-                    data = self.socket.recv(4096)
-                    recv_len = len(data)
-                    response += data.decode()
+        try: #try, except kullanmamizin sebebi eger listener ve ya hedefden biri baglantiyi durdurdugunda hata vermemesi
+            while True: #birden fazla istek yapmak icin while kullanmamiz gerek. Yani birden fazla komut gonderip cikti alabilmek icin
+                recv_len = 1 #veriyi yani komutun ciktisini kontrol etmek icin ne zaman recv_len 4096 dan kucuk olursa o zaman en sonra veri gelmis demektir. Verilen en fazla 4096 olarak gelebiliyor bunu yapmamizin sebebi ciktilari kesilmis bir sekilde almamak
+                response = '' #ciktiyi burada toplayacagiz
+                while recv_len: #recv_len i while ile 4096'dan buyuk oldugu surece donguye sokuyoruz
+                    data = self.socket.recv(4096) #socket uzerinden gelen verileri aliyoruz
+                    recv_len = len(data) #recv_len'in 4096'dan kucuk olup olmadigin yoklamak icin
+                    response += data.decode() #alinan verileri topluyoruz yani birlestiriyoruz surekli, alinan veriler bytes olarak alinir o yuzden decode ile metine ceviriyoruz
                     if recv_len < 4096:
-                        break
-                if response:
+                        break #eger alinan verilen bittiyse donguyu durduruyoruz
+                if response: #eger response bos degilse yazdiriyoruz
                     print(response)
-                buffer = input("> ")
-                buffer += '\n'
-                self.socket.send(buffer.encode())
-        except KeyboardInterrupt:
+                buffer = input("> ") #komutu buradan aliyoruz
+                buffer += '\n' #komutlari karismamasi icin yeni satir ekliyoruz
+                self.socket.send(buffer.encode()) #gonderilecek komutu metinden bytes'e ceviriyoruz alindiginda yeniden decode edilecek
+        except KeyboardInterrupt: #eger ctrl+c ile ve ya ctrl+z ile baglanti durduruldugunda hata verilemsin diye veriyoruz
             print("User terminated.")
-            self.socket.close()
-            sys.exit()
+            self.socket.close() #suncuyu kapatiyoruz
+            sys.exit() #koddan cikiyoruz
 
     def listen(self):
         """Set up a listener and handle incoming connections."""
