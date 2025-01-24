@@ -55,29 +55,29 @@ class NetCat: #socket baglantisi kurmak icin sinif olusturuyor yani tum baglanti
             self.socket.close() #suncuyu kapatiyoruz
             sys.exit() #koddan cikiyoruz
 
-    def listen(self):
+    def listen(self): #eger kullanici -l argumanini girecekse araci baslatdiginda bu fonksiyon calisacak
         """Set up a listener and handle incoming connections."""
-        self.socket.bind((self.args.target, self.args.port))
-        self.socket.listen(5)
-        while True:
-            client_socket, _ = self.socket.accept()
-            client_thread = threading.Thread(target=self.handle, args=(client_socket,))
-            client_thread.start()
+        self.socket.bind((self.args.target, self.args.port)) #arguman olarak verilen ip adresi ve port veriliyor
+        self.socket.listen(5) #en fazla 5 dinleme baslatabilme yani 5 sunucu
+        while True: #istemci baslatilan porta ve ip adresini girip baglanmaya calistiginda baglantinin surekli olmasi icin veriliyor
+            client_socket, _ = self.socket.accept() #istemci port ve ip adresini girdiginde bu isteki kabul etmek icin
+            client_thread = threading.Thread(target=self.handle, args=(client_socket,)) #ayni anda fazla istemcinin baglanabilmesi icin kullaniyoruz yani her istemci ayri ayri islenebiliyor
+            client_thread.start() #bu paralleligi baslatiyoruz
 
-    def handle(self, client_socket):
+    def handle(self, client_socket): #istemciden gelen istekleri islemek icin
         """Handle client connections and perform requested actions."""
-        if self.args.execute:
-            output = execute(self.args.execute)
-            client_socket.send(output.encode())
-        elif self.args.upload:
-            file_buffer = b''
-            while True:
-                data = client_socket.recv(4096)
-                if data:
+        if self.args.execute: #ilk istemcinin sunucuya baglanirken e argumanini kullanip kullanmadigini kontrol ediyoruz
+            output = execute(self.args.execute) #eger e argumani verilmisse kodun basinda yazdigimiz bu argumani islyecek fonksiyonu cagiriyoruz. e argumani istemcinin sunucuya bir komutu calistirip ciktisini gondermek  istemesidir
+            client_socket.send(output.encode()) #komut ciktisini byte formatinda gonderiyoruz (protokol geregi boyle olmasi gerekiyor)
+        elif self.args.upload: #eger istemci -u argumanini kullanirsa upload islemini baslatiyoruz. u argumani istemcinin herhangi bir dosya icerigini sunucuya gondermek istemesidir
+            file_buffer = b'' #bos bir bayt dizisi olusturuyoruz dosya icerigini bu degiskene atamak icin. byte dizisi olmasinin sebebi verilerin byte formatinda gitmek zorunda olmasi
+            while True: #while kullanmamizin sebebi dosyanin iceriginin 4096dan cok oldugunda verinin kesilmemesi icin yani hepsinin gitmesi icin
+                data = client_socket.recv(4096) #dosyanin ilk 4096 bytini data degiskenine atiyoruz
+                if data: #eger data bos degilse data icerigini daha once olusturdugumuz byte dizisine atiyoruz
                     file_buffer += data
-                else:
+                else: #eger data bossa demek ki artik dosyada data'ya atinalacak veri kalmamis demekdir bu yuzden break ile donguyu sonlandirabiliriz
                     break
-            with open(self.args.upload, 'wb') as f:
+            with open(self.args.upload, 'wb') as f: #
                 f.write(file_buffer)
             message = f'Saved file {self.args.upload}'
             client_socket.send(message.encode())
