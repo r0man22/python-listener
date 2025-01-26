@@ -64,7 +64,7 @@ class NetCat: #socket baglantisi kurmak icin sinif olusturuyor yani tum baglanti
             client_thread = threading.Thread(target=self.handle, args=(client_socket,)) #ayni anda fazla istemcinin baglanabilmesi icin kullaniyoruz yani her istemci ayri ayri islenebiliyor
             client_thread.start() #bu paralleligi baslatiyoruz
 
-    def handle(self, client_socket): #istemciden gelen istekleri islemek icin
+    def handle(self, client_socket): #istemciden gelen istekleri islemek icin yani girilen argumanlar burada isleniyor
         """Handle client connections and perform requested actions."""
         if self.args.execute: #ilk istemcinin sunucuya baglanirken e argumanini kullanip kullanmadigini kontrol ediyoruz
             output = execute(self.args.execute) #eger e argumani verilmisse kodun basinda yazdigimiz bu argumani islyecek fonksiyonu cagiriyoruz. e argumani istemcinin sunucuya bir komutu calistirip ciktisini gondermek  istemesidir
@@ -77,23 +77,24 @@ class NetCat: #socket baglantisi kurmak icin sinif olusturuyor yani tum baglanti
                     file_buffer += data
                 else: #eger data bossa demek ki artik dosyada data'ya atinalacak veri kalmamis demekdir bu yuzden break ile donguyu sonlandirabiliriz
                     break
-            with open(self.args.upload, 'wb') as f: #
+            with open(self.args.upload, 'wb') as f: #u argumani verileri sunucuya dosya iletmek icindir. Burada ilk once verileri dosyaya binary formasinda yaziyoruz
                 f.write(file_buffer)
-            message = f'Saved file {self.args.upload}'
-            client_socket.send(message.encode())
-        elif self.args.command:
-            cmd_buffer = b''
-            while True:
-                try:
-                    client_socket.send(b'BHP: #> ')
-                    while '\n' not in cmd_buffer.decode():
-                        cmd_buffer += client_socket.recv(64)
-                    response = execute(cmd_buffer.decode())
-                    if response:
+            message = f'Saved file {self.args.upload}' #dosyayi hem kaydediyoruz hem de bir degiskene atiyoruz suncuya gondermek icin
+            client_socket.send(message.encode()) #sunucuya veriyi (dosyayi gonderiyoruz)
+        elif self.args.command: #istemci c argumanini girdiginde bura ise basliyor
+            cmd_buffer = b'' #bos bir binary degiskeni yaratiyoruz verileri depolamak icin
+            while True: #surekli istemciden veri alabilmek icin sonsuz dongu olusturuyoruz
+                try: #try ve except kullanmamizin nedeni kullancinin programi durdugunda hata almamak while dongusunu dogru bir sekilde sonlandirmak icin
+                    client_socket.send(b'BHP: > ')
+                    while '\n' not in cmd_buffer.decode(): #istemciden veriyi tam almak icin boyle yapiyoruz 
+                        cmd_buffer += client_socket.recv(64) #enter tusuna yani veri gonderilmedigi surece olusturdugumuz binary dizinine veriyi depoluyoruz
+                    response = execute(cmd_buffer.decode()) #veri tamamlandiginda yani istemci entere bastiginda execute fonksiyonuna komutu veriyoruz
+                    if response: #eger gercekten gonderilecek bir veri varsa veriyi gonderiyoruz sunucuya
                         client_socket.send(response.encode())
-                    cmd_buffer = b''
-                except Exception as e:
+                    cmd_buffer = b'' #yeniden binary dizisini bosaltiyoruz yeni komut verileri icin
+                except Exception as e: #istemci ctrl+c yaptiginda hatasiz baglantiyi sonlandiriyoruz
                     print(f"Server killed: {e}")
+
                     self.socket.close()
                     sys.exit()
 
