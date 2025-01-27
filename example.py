@@ -99,7 +99,7 @@ class NetCat: #socket baglantisi kurmak icin sinif olusturuyor yani tum baglanti
                     sys.exit()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": #kod direkt olarak calistirildiginda parser kutuphanesi kullaniyoruz aksi halde import edilecekse kod o zaman parser kutuphanesinin sagladigi args argumanina gerek kalmiyor cunki bunlar manuel girielcek bu zaman
     parser = argparse.ArgumentParser(
         description="BHP Net Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
