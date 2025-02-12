@@ -98,7 +98,7 @@ def server_loop(local_host, local_port, remote_host, remote_port, receive_first)
         print('Problem on bind: %r' % e)
         print("[!!] Failed to listen on %s:%d" % (local_host, local_port))
         print("[!!] Check for other listening sockets or correct permissions.")
-            sys.exit(0)
+        sys.exit(0)
 
     print("[*] Listening on %s:%d" % (local_host, local_port))
     server.listen(5)
@@ -135,4 +135,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-.
+
