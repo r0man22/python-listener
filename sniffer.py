@@ -2,6 +2,7 @@ import socket
 import os
 
 HOST = '192.168.1.19'
+PORT = 0
 
 def main():
     if os.name == 'nt':
